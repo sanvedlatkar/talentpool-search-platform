@@ -7,10 +7,9 @@ supabase = create_client(
 )
 
 
-def create_candidate_record(
+def create_candidate(
     candidate_id,
-    resume_url,
-    s3_key
+    resume_url
 ):
 
     payload = {
@@ -19,11 +18,29 @@ def create_candidate_record(
         "processing_status": "UPLOADED"
     }
 
-    response = (
+    return (
         supabase
         .table("candidates")
         .insert(payload)
         .execute()
     )
 
-    return response
+
+def create_processing_history(
+    candidate_id,
+    status,
+    message
+):
+
+    payload = {
+        "candidate_id": candidate_id,
+        "status": status,
+        "message": message
+    }
+
+    return (
+        supabase
+        .table("processing_history")
+        .insert(payload)
+        .execute()
+    )

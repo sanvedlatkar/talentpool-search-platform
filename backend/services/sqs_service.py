@@ -12,12 +12,12 @@ def send_resume_message(
     s3_key
 ):
 
-    message = {
+    payload = {
         "candidate_id": candidate_id,
         "s3_key": s3_key
     }
 
     sqs.send_message(
         QueueUrl=QUEUE_URL,
-        MessageBody=json.dumps(message)
+        MessageBody=json.dumps(payload)
     )
