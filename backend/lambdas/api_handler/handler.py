@@ -9,6 +9,7 @@ BUCKET_NAME = os.environ["S3_BUCKET"]
 
 
 def generate_upload_url(file_name, content_type):
+
     return s3_client.generate_presigned_url(
         ClientMethod="put_object",
         Params={
@@ -24,7 +25,7 @@ def lambda_handler(event, context):
 
     route_key = event.get("routeKey")
 
-    # Health Check Endpoint
+    # Health Check
     if route_key == "GET /health":
 
         return {
@@ -58,6 +59,23 @@ def lambda_handler(event, context):
                 "candidate_id": candidate_id,
                 "upload_url": upload_url,
                 "s3_key": s3_key
+            })
+        }
+
+    # Upload Complete Route
+    if route_key == "POST /upload-complete":
+
+        body = json.loads(event.get("body", "{}"))
+
+        candidate_id = body["candidate_id"]
+        s3_key = body["s3_key"]
+
+        return {
+            "statusCode": 200,
+            "body": json.dumps({
+                "candidate_id": candidate_id,
+                "status": "UPLOADED",
+                "queued": True
             })
         }
 

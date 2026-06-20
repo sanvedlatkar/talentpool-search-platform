@@ -1,12 +1,27 @@
 # API Design
 
-## Health Endpoint
+## GET /health
 
-GET /health
+Returns API health status.
 
-Response:
+## POST /upload-url
+
+Generates a presigned S3 upload URL.
+
+Request:
 
 {
-  "status": "healthy",
-  "service": "TalentPool API"
+  "file_name": "resume.pdf",
+  "content_type": "application/pdf"
+}
+
+## POST /upload-complete
+
+Registers uploaded resume.
+
+Request:
+
+{
+  "candidate_id": "uuid",
+  "s3_key": "resumes/uuid/resume.pdf"
 }
