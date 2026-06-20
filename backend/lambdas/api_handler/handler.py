@@ -1,18 +1,29 @@
 import json
-import logging
-
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
 
 def lambda_handler(event, context):
 
-    logger.info("Health endpoint invoked")
+    route_key = event.get("routeKey")
+
+    if route_key == "GET /health":
+        return {
+            "statusCode": 200,
+            "body": json.dumps({
+                "status": "healthy",
+                "service": "TalentPool API"
+            })
+        }
+
+    if route_key == "POST /upload-url":
+        return {
+            "statusCode": 200,
+            "body": json.dumps({
+                "message": "upload endpoint placeholder"
+            })
+        }
 
     return {
-        "statusCode": 200,
+        "statusCode": 404,
         "body": json.dumps({
-            "status": "healthy",
-            "service": "TalentPool API"
+            "message": "not found"
         })
-    }#
+    }
