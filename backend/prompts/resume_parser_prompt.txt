@@ -1,18 +1,34 @@
-You are an expert resume parser.
+prompt = f"""
+Extract resume information.
 
-Extract structured information.
+Return ONLY valid JSON.
 
-Return ONLY JSON.
+{{
+  "full_name": "",
+  "email": "",
+  "phone": "",
+  "skills": [],
+  "experience_years": 0,
+  "education": [],
+  "certifications": [
+    {{
+      "name": "",
+      "provider": "",
+      "status": ""
+    }}
+  ],
+  "projects": [
+    {{
+      "name": "",
+      "description": "",
+      "duration": "",
+      "technologies": []
+    }}
+  ],
+  "current_title": ""
+}}
 
-Fields:
+Resume:
 
-full_name
-email
-phone
-linkedin_url
-github_url
-skills
-education
-experience_years
-current_title
-location
+{resume_text}
+"""

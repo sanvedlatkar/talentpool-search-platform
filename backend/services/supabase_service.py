@@ -7,6 +7,9 @@ supabase = create_client(
     os.environ["SUPABASE_SERVICE_ROLE_KEY"]
 )
 
+# ==========================================
+# WRITE FUNCTIONS (Resume Processing Pipeline)
+# ==========================================
 def save_candidate(candidate_id, parsed_resume, contact_details):
     data = {
         "id": candidate_id,
@@ -74,3 +77,90 @@ def save_projects(candidate_id, projects):
         supabase.table(
             "candidate_projects"
         ).insert(rows).execute()
+
+
+# ==========================================
+# READ FUNCTIONS (Recruiter Frontend APIs)
+# ==========================================
+def get_candidates():
+    response = (
+        supabase
+        .table("candidates")
+        .select("id, name, current_title")
+        .execute()
+    )
+    
+    return response.data
+
+
+def get_candidate(candidate_id):
+    candidate = (
+        supabase
+        .table("candidates")
+        .select("*")
+        .eq("id", candidate_id)
+        .execute()
+    )
+
+    skills = (
+        supabase
+        .table("candidate_skills")
+        .select("*")
+        .eq("candidate_id", candidate_id)
+        .execute()
+    )
+
+    projects = (
+        supabase
+        .table("candidate_projects")
+        .select("*")
+        .eq("candidate_id", candidate_id)
+        .execute()
+    )
+
+    certifications = (
+        supabase
+        .table("candidate_certifications")
+        .select("*")
+        .eq("candidate_id", candidate_id)
+        .execute()
+    )
+
+    return {
+        "candidate": candidate.data,
+        "skills": skills.data,
+        "projects": projects.data,
+        "certifications": certifications.data
+    }
+
+
+def search_by_skill(skill):
+    # .ilike() performs a case-insensitive match (e.g., "AWS" matches "aws")
+    skill_rows = (
+        supabase
+        .table("candidate_skills")
+        .select("candidate_id")
+        .ilike("skill", f"%{skill}%")
+        .execute()
+    )
+
+    # Extract just the IDs from the response
+    ids = [
+        row["candidate_id"]
+        for row in skill_rows.data
+    ]
+
+    # If no candidates have this skill, exit early
+    if not ids:
+        return []
+
+    # Fetch the actual candidate profiles using the matched IDs
+    candidates = (
+        supabase
+        .table("candidates")
+        .select("*")
+        .in_("id", ids)
+        .execute()
+    )
+
+    return candidates.data
