@@ -3,6 +3,7 @@ import boto3
 import os
 import re
 
+from groq import Groq
 from pypdf import PdfReader
 from docx import Document
 
@@ -11,6 +12,73 @@ s3 = boto3.client("s3")
 BUCKET_NAME = os.environ["S3_BUCKET"]
 
 
+# ==========================================
+# GROQ PARSING FUNCTION (Integrated)
+# ==========================================
+def parse_resume(resume_text):
+    client = Groq(
+        api_key=os.environ["GROQ_API_KEY"]
+    )
+
+    prompt = f"""
+Extract resume information.
+
+Return ONLY valid JSON.
+
+{{
+  "full_name": "",
+  "email": "",
+  "phone": "",
+  "skills": [],
+  "experience_years": 0,
+  "education": [],
+  "certifications": [],
+  "projects": [],
+  "current_title": ""
+}}
+
+Resume:
+
+{resume_text}
+"""
+
+    print("Calling Groq API...")
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        temperature=0
+    )
+    print("Groq API responded")
+
+    content = response.choices[0].message.content
+
+    print("RAW GROQ RESPONSE:")
+    print(content)
+
+    match = re.search(
+        r"\{.*\}",
+        content,
+        re.DOTALL
+    )
+
+    if not match:
+        raise ValueError(
+            "Groq did not return valid JSON"
+        )
+
+    return json.loads(
+        match.group(0)
+    )
+
+
+# ==========================================
+# TEXT EXTRACTION & SCRUBBING
+# ==========================================
 def normalize_text(text):
     # 1. Replace non-breaking spaces
     text = text.replace("\u00a0", " ")
@@ -217,6 +285,9 @@ def extract_text(file_path):
     raise ValueError(f"Unsupported file type: {file_path}")
 
 
+# ==========================================
+# MAIN HANDLER
+# ==========================================
 def lambda_handler(event, context):
     print("Incoming Event:")
     print(json.dumps(event))
@@ -280,9 +351,14 @@ def lambda_handler(event, context):
             print(f"Original Length: {len(normalized_text)}")
             print(f"Scrubbed text generated successfully. Length={len(scrubbed_text)}")
 
+            # 6. Parse structured candidate JSON via Groq
+            print("Sending scrubbed text to Groq for parsing...")
+            parsed_candidate_data = parse_resume(scrubbed_text)
+
+            print("GROQ PARSING RESULT:")
+            print(json.dumps(parsed_candidate_data, indent=2))
+
             # TODO:
-            # Send scrubbed_text to Groq
-            # Parse structured candidate JSON
             # Store candidate data in Supabase
 
             print(
