@@ -1,87 +1,129 @@
--- =====================================================
--- TalentPool Search Platform Database Schema
--- =====================================================
+-- ==========================================
+-- TALENTPOOL SEARCH PLATFORM
+-- DATABASE SCHEMA
+-- ==========================================
 
--- Candidates Table
+-- Enable UUID support
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TABLE candidates (
+-- ==========================================
+-- CANDIDATES
+-- ==========================================
 
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+CREATE TABLE IF NOT EXISTS candidates (
+    id UUID PRIMARY KEY,
 
-    name VARCHAR(255),
-
-    email VARCHAR(255),
-
-    phone VARCHAR(50),
+    name VARCHAR,
+    email VARCHAR,
+    phone VARCHAR,
 
     linkedin_url TEXT,
+    github_url TEXT,
 
-    location VARCHAR(255),
+    location VARCHAR,
 
-    years_experience NUMERIC(4,1),
-
-    latest_job_title VARCHAR(255),
+    years_experience NUMERIC,
+    latest_job_title VARCHAR,
 
     skills TEXT[],
 
     resume_url TEXT,
 
-    processing_status VARCHAR(50),
+    processing_status VARCHAR DEFAULT 'UPLOADED',
+
+    current_title TEXT,
+    experience_years INTEGER,
+
+    raw_json JSONB,
 
     created_at TIMESTAMP DEFAULT NOW(),
-
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- ==========================================
+-- CANDIDATE SKILLS
+-- ==========================================
 
+CREATE TABLE IF NOT EXISTS candidate_skills (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
--- Processing History Table
+    candidate_id UUID REFERENCES candidates(id)
+        ON DELETE CASCADE,
 
-CREATE TABLE processing_history (
-
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
-    candidate_id UUID REFERENCES candidates(id),
-
-    status VARCHAR(50),
-
-    message TEXT,
-
-    created_at TIMESTAMP DEFAULT NOW()
+    skill TEXT
 );
 
+-- ==========================================
+-- CANDIDATE PROJECTS
+-- ==========================================
 
+CREATE TABLE IF NOT EXISTS candidate_projects (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
--- =====================================================
--- Indexes
--- =====================================================
+    candidate_id UUID REFERENCES candidates(id)
+        ON DELETE CASCADE,
 
-CREATE INDEX idx_candidate_location
-ON candidates(location);
+    project_name TEXT,
+    technologies TEXT[],
 
+    description TEXT,
+    duration TEXT
+);
 
-CREATE INDEX idx_candidate_experience
-ON candidates(years_experience);
+-- ==========================================
+-- CANDIDATE CERTIFICATIONS
+-- ==========================================
 
+CREATE TABLE IF NOT EXISTS candidate_certifications (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
-CREATE INDEX idx_candidate_skills
+    candidate_id UUID REFERENCES candidates(id)
+        ON DELETE CASCADE,
+
+    certification_name TEXT,
+    provider TEXT,
+    status TEXT
+);
+
+-- ==========================================
+-- INDEXES
+-- ==========================================
+
+CREATE INDEX IF NOT EXISTS idx_candidates_name
+ON candidates(name);
+
+CREATE INDEX IF NOT EXISTS idx_candidates_current_title
+ON candidates(current_title);
+
+CREATE INDEX IF NOT EXISTS idx_candidate_skills_candidate_id
+ON candidate_skills(candidate_id);
+
+CREATE INDEX IF NOT EXISTS idx_candidate_skills_skill
+ON candidate_skills(skill);
+
+CREATE INDEX IF NOT EXISTS idx_candidate_projects_candidate_id
+ON candidate_projects(candidate_id);
+
+CREATE INDEX IF NOT EXISTS idx_candidate_certifications_candidate_id
+ON candidate_certifications(candidate_id);
+
+-- ==========================================
+-- UPDATED_AT TRIGGER
+-- ==========================================
+
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_candidates_updated_at
+ON candidates;
+
+CREATE TRIGGER trg_candidates_updated_at
+BEFORE UPDATE
 ON candidates
-USING GIN(skills);
-
-ALTER TABLE candidates
-ENABLE ROW LEVEL SECURITY;
-
-ALTER TABLE processing_history
-ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY deny_all_candidates
-ON candidates
-FOR ALL
-TO public
-USING (false);
-
-CREATE POLICY deny_all_processing_history
-ON processing_history
-FOR ALL
-TO public
-USING (false);
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();

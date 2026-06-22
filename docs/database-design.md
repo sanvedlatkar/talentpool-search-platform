@@ -1,52 +1,168 @@
-# Database Design
+# TalentPulse Database Design
 
-## candidates
+## Database
 
-Stores candidate information extracted from resumes.
-
-Fields:
-
-- id
-- name
-- email
-- phone
-- linkedin_url
-- location
-- years_experience
-- latest_job_title
-- skills
-- resume_url
-- processing_status
-- created_at
-- updated_at
+Supabase PostgreSQL
 
 ---
 
-## processing_history
+# candidates
 
-Stores processing events and errors for operational troubleshooting.
+Stores primary candidate information.
 
-Examples:
+| Column | Type |
+|----------|----------|
+| id | UUID |
+| name | VARCHAR |
+| email | VARCHAR |
+| phone | VARCHAR |
+| linkedin_url | TEXT |
+| github_url | TEXT |
+| location | VARCHAR |
+| current_title | TEXT |
+| experience_years | INTEGER |
+| resume_url | TEXT |
+| processing_status | VARCHAR |
+| raw_json | JSONB |
+| created_at | TIMESTAMP |
+| updated_at | TIMESTAMP |
 
-- UPLOADED
-- PROCESSING
-- AI_COMPLETE
-- COMPLETED
-- FAILED_AI
-- FAILED_TEXT_EXTRACTION
+Primary Key:
+
+```sql
+id
+```
 
 ---
 
-## Indexing Strategy
+# candidate_skills
 
-### idx_candidate_location
+Stores extracted skills.
 
-Improves recruiter searches by location.
+| Column | Type |
+|----------|----------|
+| id | BIGINT |
+| candidate_id | UUID |
+| skill | TEXT |
 
-### idx_candidate_experience
+Relationship:
 
-Improves experience-based filtering.
+```sql
+candidate_id
+→ candidates.id
+```
 
-### idx_candidate_skills
+One candidate can have many skills.
 
-GIN index enables efficient searching within PostgreSQL arrays.
+---
+
+# candidate_projects
+
+Stores extracted projects.
+
+| Column | Type |
+|----------|----------|
+| id | BIGINT |
+| candidate_id | UUID |
+| project_name | TEXT |
+| description | TEXT |
+| duration | TEXT |
+| technologies | TEXT[] |
+
+Relationship:
+
+```sql
+candidate_id
+→ candidates.id
+```
+
+One candidate can have many projects.
+
+---
+
+# candidate_certifications
+
+Stores extracted certifications.
+
+| Column | Type |
+|----------|----------|
+| id | BIGINT |
+| candidate_id | UUID |
+| certification_name | TEXT |
+| provider | TEXT |
+| status | TEXT |
+
+Relationship:
+
+```sql
+candidate_id
+→ candidates.id
+```
+
+One candidate can have many certifications.
+
+---
+
+# Relationships
+
+```text
+candidates
+│
+├── candidate_skills
+│
+├── candidate_projects
+│
+└── candidate_certifications
+```
+
+---
+
+# Design Decisions
+
+## Why Separate Tables?
+
+Avoid storing arrays inside candidate records.
+
+Benefits:
+
+- Easier searching
+- Better indexing
+- Relational design
+- Scalable
+
+---
+
+# Storage Flow
+
+Resume Upload
+
+↓
+
+S3
+
+↓
+
+SQS
+
+↓
+
+Resume Processor Lambda
+
+↓
+
+Groq Parsing
+
+↓
+
+Supabase
+
+---
+
+# Future Enhancements
+
+- Candidate scoring
+- Resume versions
+- Education table
+- Work experience table
+- Recruiter authentication
+- Audit logging

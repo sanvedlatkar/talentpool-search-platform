@@ -1,41 +1,11 @@
-import pdfplumber
-from docx import Document
+extract_pdf_text()
+extract_docx_text()
+extract_text()
 
+normalize_text()
 
-def extract_pdf_text(file_path):
+extract_embedded_links()
 
-    text = ""
+extract_contact_details()
 
-    with pdfplumber.open(file_path) as pdf:
-
-        for page in pdf.pages:
-
-            page_text = page.extract_text()
-
-            if page_text:
-                text += page_text + "\n"
-
-    return text
-
-
-def extract_docx_text(file_path):
-
-    document = Document(file_path)
-
-    return "\n".join(
-        paragraph.text
-        for paragraph in document.paragraphs
-    )
-
-
-def extract_text(file_path):
-
-    if file_path.lower().endswith(".pdf"):
-        return extract_pdf_text(file_path)
-
-    if file_path.lower().endswith(".docx"):
-        return extract_docx_text(file_path)
-
-    raise ValueError(
-        "Unsupported file format"
-    )
+scrub_pii()

@@ -7,6 +7,7 @@ Return ONLY valid JSON.
   "full_name": "",
   "email": "",
   "phone": "",
+  "location": "",
   "skills": [],
   "experience_years": 0,
   "education": [],
